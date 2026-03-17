@@ -5,11 +5,11 @@ const router = express.Router();
 const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports';
 
 const LEAGUES = [
-  { key: 'nfl',  sport: 'football',  league: 'nfl'         },
-  { key: 'nba',  sport: 'basketball',league: 'nba'         },
-  { key: 'mlb',  sport: 'baseball',  league: 'mlb'         },
-  { key: 'nhl',  sport: 'hockey',    league: 'nhl'         },
-  { key: 'epl',  sport: 'soccer',    league: 'eng.1'       },
+  { key: 'nfl',  sport: 'football',  league: 'nfl'   },
+  { key: 'nba',  sport: 'basketball',league: 'nba'   },
+  { key: 'mlb',  sport: 'baseball',  league: 'mlb'   },
+  { key: 'nhl',  sport: 'hockey',    league: 'nhl'   },
+  { key: 'epl',  sport: 'soccer',    league: 'eng.1' },
 ];
 
 function parseGame(evt, leagueKey) {
@@ -74,14 +74,50 @@ router.get('/mlb/boxscore/:gameId', async (req, res) => {
     const url = `${ESPN_BASE}/baseball/mlb/summary?event=${gameId}`;
     const { data } = await axios.get(url, { timeout: 8000 });
 
-    const boxscore = data.boxscore || {};
-    const players = data.rosters || [];
-    const linescore = data.header?.competitions?.[0]?.linescores || [];
+    const comp = data.header?.competitions?.[0];
+    const competitors = comp?.competitors || [];
 
-    res.json({ boxscore, linescore, players, raw: data.header?.competitions?.[0] });
+    // Inning-by-inning with R/H/E per inning
+    const teams = competitors.map(c => ({
+      team: c.team?.abbreviation,
+      teamName: c.team?.displayName,
+      logo: c.team?.logo || null,
+      homeAway: c.homeAway,
+      score: parseInt(c.score || 0),
+      linescores: (c.linescores || []).map(ls => ({
+        runs: ls.displayValue ?? '-',
+        hits: ls.hits ?? 0,
+        errors: ls.errors ?? 0,
+      })),
+    }));
+
+    // Player stats: batting (group 0) and pitching (group 1)
+    const playerStats = (data.boxscore?.players || []).map(teamData => {
+      const matchedComp = competitors.find(c => c.team?.id === teamData.team?.id);
+      return {
+        team: teamData.team?.abbreviation,
+        homeAway: matchedComp?.homeAway || null,
+        batting: parseStatGroup(teamData.statistics?.[0]),
+        pitching: parseStatGroup(teamData.statistics?.[1]),
+      };
+    });
+
+    res.json({ teams, playerStats });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
+function parseStatGroup(group) {
+  if (!group) return { labels: [], athletes: [] };
+  return {
+    labels: group.labels || [],
+    keys: group.keys || [],
+    athletes: (group.athletes || []).map(a => ({
+      name: a.athlete?.displayName || '---',
+      stats: a.stats || [],
+    })),
+  };
+}
 
 module.exports = router;
