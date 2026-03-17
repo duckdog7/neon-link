@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #050a0e;
+}
+
+/* Scrollbar hidden */
+::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
+
+/* CRT scanline overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 255, 0.012) 2px,
+    rgba(0, 255, 255, 0.012) 4px
+  );
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* Vignette */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.7) 100%);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+@layer utilities {
+  .text-shadow-neon-cyan {
+    text-shadow: 0 0 6px #00ffff, 0 0 20px #00ffff88;
+  }
+  .text-shadow-neon-green {
+    text-shadow: 0 0 6px #00ff88, 0 0 20px #00ff8888;
+  }
+  .text-shadow-neon-amber {
+    text-shadow: 0 0 6px #ffaa00, 0 0 20px #ffaa0088;
+  }
+  .text-shadow-neon-red {
+    text-shadow: 0 0 6px #ff3333, 0 0 20px #ff333388;
+  }
+  .text-shadow-neon-pink {
+    text-shadow: 0 0 6px #ff00ff, 0 0 20px #ff00ff88;
+  }
+  .panel-border-cyan {
+    border: 1px solid rgba(0,255,255,0.3);
+    background: linear-gradient(135deg, rgba(0,255,255,0.04) 0%, rgba(0,0,0,0) 100%);
+  }
+  .panel-border-amber {
+    border: 1px solid rgba(255,170,0,0.3);
+    background: linear-gradient(135deg, rgba(255,170,0,0.04) 0%, rgba(0,0,0,0) 100%);
+  }
+}
