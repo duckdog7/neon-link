@@ -16,12 +16,12 @@ router.post('/summarize', async (req, res) => {
   try {
     const client = new OpenAI({ apiKey });
 
-    const prompt = `In 1-2 plain sentences (max 40 words total), give brief context or background for this news headline. Be factual and concise.\n\nHeadline: "${headline}"`;
+    const prompt = `In 4-5 sentences, give context and background for this news headline. Cover the key facts, relevant history, and why it matters. Be factual and concise.\n\nHeadline: "${headline}"`;
 
     const completion = await client.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 80,
+      max_tokens: 200,
       temperature: 0.3,
     });
 
