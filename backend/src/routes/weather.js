@@ -2,7 +2,6 @@ const express = require('express');
 const axios = require('axios');
 const router = express.Router();
 
-// WMO weather code → emoji + description
 const WMO = {
   0:  { icon: '☀️',  desc: 'clear sky' },
   1:  { icon: '🌤',  desc: 'mainly clear' },
@@ -30,19 +29,34 @@ const WMO = {
   99: { icon: '⛈',  desc: 'thunderstorm + hail' },
 };
 
-// Cache geocoding result so we don't re-fetch on every weather poll
 let geoCache = null;
 
 async function geocode(location) {
   if (geoCache) return geoCache;
-  const { data } = await axios.get('https://geocoding-api.open-meteo.com/v1/search', {
-    params: { name: location, count: 1, language: 'en', format: 'json' },
-    timeout: 8000,
-  });
-  const r = data.results?.[0];
-  if (!r) throw new Error(`Location not found: ${location}`);
-  geoCache = { lat: r.latitude, lon: r.longitude, name: r.name };
-  return geoCache;
+
+  // "San Jose, California" → try "San Jose" with US country code first
+  const cityOnly = location.split(',')[0].trim();
+
+  // Try with full string first, fall back to city-only + US
+  const attempts = [
+    { name: cityOnly, countryCode: 'US' },
+    { name: location },
+    { name: cityOnly },
+  ];
+
+  for (const params of attempts) {
+    const { data } = await axios.get('https://geocoding-api.open-meteo.com/v1/search', {
+      params: { ...params, count: 1, language: 'en', format: 'json' },
+      timeout: 8000,
+    });
+    const r = data.results?.[0];
+    if (r) {
+      geoCache = { lat: r.latitude, lon: r.longitude, name: r.name };
+      return geoCache;
+    }
+  }
+
+  throw new Error(`Location not found: ${location}`);
 }
 
 router.get('/', async (req, res) => {
@@ -64,8 +78,7 @@ router.get('/', async (req, res) => {
     });
 
     const current = data.current;
-    const code = current.weathercode;
-    const wmo = WMO[code] || { icon: '🌐', desc: 'unknown' };
+    const wmo = WMO[current.weathercode] || { icon: '🌐', desc: 'unknown' };
 
     res.json({
       temp: Math.round(current.temperature_2m),
@@ -75,6 +88,7 @@ router.get('/', async (req, res) => {
       description: wmo.desc,
     });
   } catch (err) {
+    console.error('Weather error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
