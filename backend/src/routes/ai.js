@@ -1,8 +1,21 @@
 const express = require('express');
 const OpenAI = require('openai');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 
-router.post('/summarize', async (req, res) => {
+// In-memory cache: headline text → summary string
+const summaryCache = new Map();
+
+// 10 requests per IP per hour
+const limiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests — try again in an hour.' },
+});
+
+router.post('/summarize', limiter, async (req, res) => {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey || apiKey === 'your_openai_key_here') {
     return res.status(400).json({ error: 'OpenAI API key not configured' });
@@ -11,6 +24,12 @@ router.post('/summarize', async (req, res) => {
   const { headline } = req.body;
   if (!headline) {
     return res.status(400).json({ error: 'headline string required' });
+  }
+
+  // Return cached summary if available
+  const cacheKey = headline.trim().toLowerCase();
+  if (summaryCache.has(cacheKey)) {
+    return res.json({ summary: summaryCache.get(cacheKey), cached: true });
   }
 
   try {
@@ -26,6 +45,10 @@ router.post('/summarize', async (req, res) => {
     });
 
     const summary = completion.choices[0].message.content?.trim() || '';
+
+    // Cache for the lifetime of the server process
+    summaryCache.set(cacheKey, summary);
+
     res.json({ summary });
   } catch (err) {
     const msg = err?.error?.message || err.message;
