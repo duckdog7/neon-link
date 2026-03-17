@@ -93,6 +93,10 @@ function BoxContent({ data, game, accentHex }) {
   const { teams = [], playerStats = [] } = data;
   const away = teams.find(t => t.homeAway === 'away') || teams[0];
   const home = teams.find(t => t.homeAway === 'home') || teams[1];
+
+  // Use scoreboard logos as fallback if summary API didn't return them
+  if (away && !away.logo) away.logo = game.awayLogo;
+  if (home && !home.logo) home.logo = game.homeLogo;
   const innings = Math.max(9, away?.linescores?.length || 0, home?.linescores?.length || 0);
 
   const awayBatting  = playerStats.find(t => t.homeAway === 'away')?.batting;
@@ -112,12 +116,12 @@ function BoxContent({ data, game, accentHex }) {
 
       {/* Batting */}
       {awayBatting?.athletes?.length > 0 && (
-        <Section title={`${away?.team} BATTING`} accentHex={accentHex}>
+        <Section title="BATTING" logo={away?.logo} teamLabel={away?.team} accentHex={accentHex}>
           <StatsTable group={awayBatting} cols={BAT_COLS} accentHex={accentHex} />
         </Section>
       )}
       {homeBatting?.athletes?.length > 0 && (
-        <Section title={`${home?.team} BATTING`} accentHex={accentHex}>
+        <Section title="BATTING" logo={home?.logo} teamLabel={home?.team} accentHex={accentHex}>
           <StatsTable group={homeBatting} cols={BAT_COLS} accentHex={accentHex} />
         </Section>
       )}
@@ -127,13 +131,13 @@ function BoxContent({ data, game, accentHex }) {
         <Section title="PITCHING" accentHex={accentHex}>
           {awayPitching?.athletes?.length > 0 && (
             <div className="mb-2">
-              <div className="text-xs mb-1" style={{ color: accentHex + '77' }}>{away?.team}</div>
+              <TeamSubheader logo={away?.logo} label={away?.team} accentHex={accentHex} />
               <StatsTable group={awayPitching} cols={PITCH_COLS} accentHex={accentHex} />
             </div>
           )}
           {homePitching?.athletes?.length > 0 && (
             <div>
-              <div className="text-xs mb-1" style={{ color: accentHex + '77' }}>{home?.team}</div>
+              <TeamSubheader logo={home?.logo} label={home?.team} accentHex={accentHex} />
               <StatsTable group={homePitching} cols={PITCH_COLS} accentHex={accentHex} />
             </div>
           )}
@@ -192,18 +196,23 @@ function LinescoreTable({ away, home, innings, accentHex }) {
           </tr>
         </thead>
         <tbody>
-          <LinescoreRow label={away?.team} ls={away?.linescores} innings={innings} totals={awayTotals} accentHex={accentHex} />
-          <LinescoreRow label={home?.team} ls={home?.linescores} innings={innings} totals={homeTotals} accentHex={accentHex} />
+          <LinescoreRow label={away?.team} logo={away?.logo} ls={away?.linescores} innings={innings} totals={awayTotals} accentHex={accentHex} />
+          <LinescoreRow label={home?.team} logo={home?.logo} ls={home?.linescores} innings={innings} totals={homeTotals} accentHex={accentHex} />
         </tbody>
       </table>
     </div>
   );
 }
 
-function LinescoreRow({ label, ls = [], innings, totals, accentHex }) {
+function LinescoreRow({ label, logo, ls = [], innings, totals, accentHex }) {
   return (
     <tr style={{ borderTop: `1px solid ${accentHex}18` }}>
-      <td className="pr-3 py-1.5 font-display text-xs" style={{ color: '#ccc' }}>{label}</td>
+      <td className="pr-3 py-1.5" style={{ color: '#ccc' }}>
+        <div className="flex items-center gap-1.5">
+          {logo && <img src={logo} alt={label} className="w-5 h-5 object-contain shrink-0" />}
+          <span className="font-display text-xs">{label}</span>
+        </div>
+      </td>
       {Array.from({ length: innings }, (_, i) => (
         <td key={i} className="text-center px-1 py-1.5" style={{ color: '#aaa' }}>
           {ls[i]?.runs ?? '-'}
@@ -244,13 +253,24 @@ function StatsTable({ group, cols, accentHex }) {
   );
 }
 
-function Section({ title, accentHex, children }) {
+function Section({ title, logo, teamLabel, accentHex, children }) {
   return (
     <div>
-      <div className="text-xs tracking-widest mb-2 pb-1" style={{ color: accentHex + '88', borderBottom: `1px solid ${accentHex}22` }}>
-        {title}
+      <div className="flex items-center gap-2 mb-2 pb-1" style={{ borderBottom: `1px solid ${accentHex}22` }}>
+        {logo && <img src={logo} alt={teamLabel} className="w-5 h-5 object-contain" />}
+        {teamLabel && <span className="font-display text-xs" style={{ color: '#ccc' }}>{teamLabel}</span>}
+        <span className="text-xs tracking-widest" style={{ color: accentHex + '88' }}>{title}</span>
       </div>
       {children}
+    </div>
+  );
+}
+
+function TeamSubheader({ logo, label, accentHex }) {
+  return (
+    <div className="flex items-center gap-1.5 mb-1">
+      {logo && <img src={logo} alt={label} className="w-4 h-4 object-contain" />}
+      <span className="text-xs" style={{ color: accentHex + '77' }}>{label}</span>
     </div>
   );
 }
