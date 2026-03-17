@@ -85,6 +85,24 @@ function ScrollingScores({ games, accentHex, onMLBClick }) {
   );
 }
 
+function TeamName({ logo, name }) {
+  const [imgError, setImgError] = React.useState(false);
+  return (
+    <div className="flex items-center gap-1.5 min-w-0">
+      {logo && !imgError ? (
+        <img
+          src={logo}
+          alt={name}
+          className="w-5 h-5 object-contain shrink-0"
+          style={{ filter: 'drop-shadow(0 0 2px rgba(255,255,255,0.15))' }}
+          onError={() => setImgError(true)}
+        />
+      ) : null}
+      <span className="text-sm font-mono truncate" style={{ color: '#ddd' }}>{name}</span>
+    </div>
+  );
+}
+
 function GameCard({ game, accentHex, onMLBClick }) {
   const statusColor =
     game.status === 'LIVE' ? '#00ff88' :
@@ -108,13 +126,13 @@ function GameCard({ game, accentHex, onMLBClick }) {
 
       {/* Teams + Scores */}
       <div className="flex-1 min-w-0">
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-mono truncate" style={{ color: '#ddd' }}>{game.awayTeam}</span>
-          <span className="text-sm font-display font-bold ml-2" style={{ color: accentHex }}>{game.awayScore}</span>
+        <div className="flex justify-between items-center gap-2">
+          <TeamName logo={game.awayLogo} name={game.awayTeam} />
+          <span className="text-sm font-display font-bold shrink-0" style={{ color: accentHex }}>{game.awayScore}</span>
         </div>
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-mono truncate" style={{ color: '#ddd' }}>{game.homeTeam}</span>
-          <span className="text-sm font-display font-bold ml-2" style={{ color: accentHex }}>{game.homeScore}</span>
+        <div className="flex justify-between items-center gap-2">
+          <TeamName logo={game.homeLogo} name={game.homeTeam} />
+          <span className="text-sm font-display font-bold shrink-0" style={{ color: accentHex }}>{game.homeScore}</span>
         </div>
       </div>
 
